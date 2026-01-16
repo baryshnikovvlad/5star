@@ -3,7 +3,8 @@
 import { useState } from "react";
 import styles from "./page.module.css";
 
-const YANDEX_REVIEW_URL = "https://yandex.ru/maps/?from=feedback-widget";
+const YANDEX_PLACE_ID = "1736307653";
+const YANDEX_REVIEW_URL = `https://yandex.ru/maps/org/${YANDEX_PLACE_ID}/?utm_source=widget#reviews`;
 const YANDEX_IFRAME_SRC =
   "https://yandex.ru/sprav/widget/rating-badge/1736307653?type=award&theme=dark";
 
