@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "npm run db:up && next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "npm run db:up && next start",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down"
   },
   "dependencies": {
     "next": "16.1.2",
+    "pg": "^8.17.1",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   }

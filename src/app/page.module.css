@@ -162,6 +162,11 @@
   padding: 18px;
 }
 
+.formIntro {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .label {
   font-weight: 600;
 }
@@ -209,8 +214,21 @@
   box-shadow: 0 10px 24px rgba(245, 158, 11, 0.35);
 }
 
+.primaryButton:disabled,
+.linkButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .success {
   color: #86efac;
+  font-size: 14px;
+}
+
+.error {
+  color: #fca5a5;
   font-size: 14px;
 }
 
@@ -244,6 +262,13 @@
   border-color: rgba(246, 196, 82, 0.9);
   box-shadow: 0 10px 30px rgba(246, 196, 82, 0.25);
   transform: translateY(-1px);
+}
+
+.yandexEmbed {
+  width: fit-content;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(246, 196, 82, 0.3);
 }
 
 @media (max-width: 768px) {

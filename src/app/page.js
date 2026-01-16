@@ -4,15 +4,19 @@ import { useState } from "react";
 import styles from "./page.module.css";
 
 const YANDEX_REVIEW_URL = "https://yandex.ru/maps/?from=feedback-widget";
+const YANDEX_IFRAME_SRC =
+  "https://yandex.ru/sprav/widget/rating-badge/1736307653?type=award&theme=dark";
 
 export default function Home() {
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   const activeRating = hovered || rating;
-  const showReviewForm = rating > 0 && rating < 4;
+  const showReviewForm = rating > 0 && rating < 5;
   const showYandexCta = rating === 5;
 
   const caption = rating
@@ -23,15 +27,71 @@ export default function Home() {
     setRating(value);
     setHovered(0);
     setSubmitted(false);
-    if (value >= 4) {
+    setError("");
+    if (value === 5) {
       setFeedback("");
     }
   };
 
-  const handleSubmit = (event) => {
+  const submitReview = async ({ ratingValue, feedbackText }) => {
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const metadata =
+        typeof window !== "undefined"
+          ? {
+              userAgent: navigator.userAgent,
+              language: navigator.language,
+              referer: document.referrer,
+              pageUrl: window.location.href,
+            }
+          : {};
+
+      const response = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating: ratingValue,
+          feedback: feedbackText,
+          metadata,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Не удалось отправить отзыв.");
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      setError("Не удалось отправить отзыв. Попробуйте снова.");
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!showReviewForm) return;
-    setSubmitted(true);
+
+    try {
+      await submitReview({ ratingValue: rating, feedbackText: feedback });
+    } catch {
+      // Ошибка уже показана пользователю
+    }
+  };
+
+  const handleYandexClick = async () => {
+    try {
+      await submitReview({ ratingValue: 5, feedbackText: "" });
+    } catch {
+      // Даже если запись не удалась, продолжаем открывать страницу отзывов
+    }
+
+    window.open(YANDEX_REVIEW_URL, "_blank", "noopener,noreferrer");
   };
 
   const starButtonClasses = (isActive, isSelected) =>
@@ -44,11 +104,8 @@ export default function Home() {
       <main className={styles.card}>
         <div className={styles.header}>
           <span className={styles.badge}>Оценка до 5 звезд</span>
-          <h1>Как вам опыт работы с нами?</h1>
-          <p>
-            Поставьте оценку. Если меньше четырёх звёзд — поделитесь, что улучшить. При пяти звёздах
-            направим вас оставить публичный отзыв в Яндекс Картах.
-          </p>
+          <h1>Нам важно ваше мнение.</h1>
+          <p>Если вам понравилось у нас, будем рады вашему отзыву — он помогает нам становиться лучше.</p>
         </div>
 
         <section className={styles.ratingBlock} aria-label="Форма оценки сервиса">
@@ -80,16 +137,22 @@ export default function Home() {
             <p className={styles.caption}>{caption}</p>
             <p className={styles.helper}>
               {rating === 0 && "Пять кликов — и всё готово."}
-              {rating > 0 && rating < 4 && "Расскажите, что исправить. Мы реагируем быстро."}
-              {rating === 4 &&
-                "Спасибо за оценку! Можете уточнить детали или поставить 5, чтобы перейти в Яндекс Карты."}
-              {rating === 5 && "Отлично! Можно сразу перейти к публичному отзыву на Яндекс Картах."}
+              {rating > 0 &&
+                rating < 4 &&
+                "Поделитесь, что можно улучшить — мы быстро реагируем и исправляем."}
+              {rating === 4 && "Спасибо за 4 звезды! Опишите, что можем сделать лучше."}
+              {rating === 5 && "Отлично! Откроем страницу Яндекс Карт для публичного отзыва."}
             </p>
           </div>
         </section>
 
         {showReviewForm && (
           <form className={styles.form} onSubmit={handleSubmit}>
+            <p className={styles.formIntro}>
+              Есть идеи или замечания?
+              <br />
+              Напишите, что можно улучшить. Мы ценим честную обратную связь..
+            </p>
             <label className={styles.label} htmlFor="feedback">
               Что нам улучшить?
             </label>
@@ -104,14 +167,15 @@ export default function Home() {
               required
             />
             <div className={styles.actions}>
-              <button type="submit" className={styles.primaryButton}>
-                Отправить отзыв
+              <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
+                {isSubmitting ? "Отправляем..." : "Отправить отзыв"}
               </button>
               {submitted && (
                 <span className={styles.success}>
                   Спасибо! Мы получили ваш отзыв и скоро вернёмся с ответом.
                 </span>
               )}
+              {error && <span className={styles.error}>{error}</span>}
             </div>
           </form>
         )}
@@ -122,14 +186,24 @@ export default function Home() {
               Спасибо за 5 звёзд! Нажмите на кнопку ниже, чтобы оставить отзыв на Яндекс Картах — это
               поможет другим узнать о нашем сервисе.
             </p>
-            <a
+            <div className={styles.yandexEmbed}>
+              <iframe
+                src={YANDEX_IFRAME_SRC}
+                width="150"
+                height="50"
+                frameBorder="0"
+                title="Публичный отзыв в Яндекс Картах"
+              />
+            </div>
+            <button
+              type="button"
               className={styles.linkButton}
-              href={YANDEX_REVIEW_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={handleYandexClick}
+              disabled={isSubmitting}
             >
-              Перейти к отзыву на Яндекс Картах
-            </a>
+              Открыть отзыв на Яндекс Картах
+            </button>
+            {error && <span className={styles.error}>{error}</span>}
           </div>
         )}
       </main>
