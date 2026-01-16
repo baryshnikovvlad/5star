@@ -64,10 +64,11 @@ export default function Home() {
       }
 
       setSubmitted(true);
+      return true;
     } catch (err) {
       console.error(err);
-      setError("Не удалось отправить отзыв. Попробуйте снова.");
-      throw err;
+      setError(err.message || "Не удалось отправить отзыв. Попробуйте снова.");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -77,20 +78,11 @@ export default function Home() {
     event.preventDefault();
     if (!showReviewForm) return;
 
-    try {
-      await submitReview({ ratingValue: rating, feedbackText: feedback });
-    } catch {
-      // Ошибка уже показана пользователю
-    }
+    await submitReview({ ratingValue: rating, feedbackText: feedback });
   };
 
   const handleYandexClick = async () => {
-    try {
-      await submitReview({ ratingValue: 5, feedbackText: "" });
-    } catch {
-      // Даже если запись не удалась, продолжаем открывать страницу отзывов
-    }
-
+    await submitReview({ ratingValue: 5, feedbackText: "" });
     window.open(YANDEX_REVIEW_URL, "_blank", "noopener,noreferrer");
   };
 
@@ -183,25 +175,24 @@ export default function Home() {
         {showYandexCta && (
           <div className={styles.external}>
             <p>
-              Спасибо за 5 звёзд! Нажмите на кнопку ниже, чтобы оставить отзыв на Яндекс Картах — это
+              Спасибо за 5 звёзд! Нажмите на бейдж, чтобы оставить отзыв на Яндекс Картах — это
               поможет другим узнать о нашем сервисе.
             </p>
-            <div className={styles.yandexEmbed}>
+            <button
+              type="button"
+              className={styles.yandexEmbed}
+              onClick={handleYandexClick}
+              disabled={isSubmitting}
+              aria-label="Оставить отзыв на Яндекс Картах"
+            >
               <iframe
                 src={YANDEX_IFRAME_SRC}
                 width="150"
                 height="50"
                 frameBorder="0"
                 title="Публичный отзыв в Яндекс Картах"
+                aria-hidden="true"
               />
-            </div>
-            <button
-              type="button"
-              className={styles.linkButton}
-              onClick={handleYandexClick}
-              disabled={isSubmitting}
-            >
-              Открыть отзыв на Яндекс Картах
             </button>
             {error && <span className={styles.error}>{error}</span>}
           </div>
